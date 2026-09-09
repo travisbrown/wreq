@@ -319,6 +319,7 @@ mod rt;
 mod sync;
 mod util;
 
+pub mod connection_observer;
 #[cfg(feature = "cookies")]
 pub mod cookie;
 pub mod dns;
