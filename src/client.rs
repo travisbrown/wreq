@@ -180,6 +180,7 @@ struct Config {
     accept_encoding: AcceptEncoding,
     connect_timeout: Option<Duration>,
     connection_verbose: bool,
+    connection_observer: Option<Arc<dyn crate::connection_observer::ConnectionObserver>>,
     pool_idle_timeout: Option<Duration>,
     pool_max_idle_per_host: usize,
     pool_max_size: Option<NonZeroUsize>,
@@ -267,6 +268,7 @@ impl Client {
                 accept_encoding: AcceptEncoding::default(),
                 connect_timeout: None,
                 connection_verbose: false,
+                connection_observer: None,
                 pool_idle_timeout: Some(Duration::from_secs(90)),
                 pool_max_idle_per_host: usize::MAX,
                 pool_max_size: None,
@@ -510,6 +512,7 @@ impl ClientBuilder {
                 .tls_info(config.tls_info)
                 .tcp_nodelay(config.tcp_nodelay)
                 .verbose(config.connection_verbose)
+                .observer(config.connection_observer)
                 .with_tls(|tls| {
                     tls.alpn_protocol(match config.http_version_pref {
                         HttpVersionPref::Http1 => Some(AlpnProtocol::HTTP1),
@@ -1052,6 +1055,19 @@ impl ClientBuilder {
     #[inline]
     pub fn connect_timeout(mut self, timeout: Duration) -> ClientBuilder {
         self.config.connect_timeout = Some(timeout);
+        self
+    }
+
+    /// Observe plaintext connection I/O without enabling verbose logs.
+    ///
+    /// This hook runs above TLS and below the HTTP codec. See
+    /// [`ConnectionObserver`](crate::connection_observer::ConnectionObserver) for ordering,
+    /// lifetime, concurrency, and attribution requirements.
+    pub fn connection_observer(
+        mut self,
+        observer: Arc<dyn crate::connection_observer::ConnectionObserver>,
+    ) -> ClientBuilder {
+        self.config.connection_observer = Some(observer);
         self
     }
 

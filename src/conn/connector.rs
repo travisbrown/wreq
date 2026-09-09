@@ -20,11 +20,13 @@ use super::{
     descriptor::ConnectionDescriptor,
     http::HttpConnect,
     net::TcpConnector,
+    observe::Observed,
     proxy,
     timeout::{Timeout, TimeoutLayer},
     verbose::Verbose,
 };
 use crate::{
+    connection_observer::ConnectionObserver,
     dns::DynResolver,
     error::{ProxyConnect, map_timeout_to_connector_error},
     ext::UriExt,
@@ -47,8 +49,25 @@ use crate::{
 struct Config {
     proxies: Arc<Vec<ProxyMatcher>>,
     verbose: Verbose,
+    observer: Option<Arc<dyn ConnectionObserver>>,
     nodelay: bool,
     tls_info: bool,
+}
+
+impl Config {
+    /// Install the instrumentation layers a connected transport needs, outermost last.
+    ///
+    /// Without an observer this only applies verbose tracing, leaving the connection exactly
+    /// as it was before observation existed.
+    fn wrap<T>(&self, conn: T) -> Box<dyn AsyncConnWithInfo>
+    where
+        T: AsyncConnWithInfo + 'static,
+    {
+        match &self.observer {
+            Some(observer) => self.verbose.wrap(Observed::new(conn, observer.clone())),
+            None => self.verbose.wrap(conn),
+        }
+    }
 }
 
 /// Assembles the transport service graph used by a client.
@@ -100,6 +119,7 @@ impl ConnectorBuilder {
             config: Config {
                 proxies: Arc::new(proxies),
                 verbose: Verbose::OFF,
+                observer: None,
                 nodelay: true,
                 tls_info: false,
             },
@@ -143,6 +163,12 @@ impl ConnectorBuilder {
     #[inline]
     pub fn timer(mut self, timer: Timer) -> ConnectorBuilder {
         self.timer = timer;
+        self
+    }
+
+    /// Report plaintext connection I/O to an observer, independently of verbose tracing.
+    pub fn observer(mut self, observer: Option<Arc<dyn ConnectionObserver>>) -> Self {
+        self.config.observer = observer;
         self
     }
 
@@ -274,12 +300,12 @@ impl TransportConnector {
     {
         let conn = match io {
             MaybeHttpsStream::Http(stream) => Conn {
-                stream: self.config.verbose.wrap(stream),
+                stream: self.config.wrap(stream),
                 tls_info: false,
                 proxy: None,
             },
             MaybeHttpsStream::Https(stream) => Conn {
-                stream: self.config.verbose.wrap(TlsConn { stream }),
+                stream: self.config.wrap(TlsConn { stream }),
                 tls_info: self.config.tls_info,
                 proxy: None,
             },
@@ -296,8 +322,8 @@ impl TransportConnector {
         P: Into<Option<Intercept>>,
     {
         let conn = match io {
-            MaybeHttpsStream::Http(stream) => self.config.verbose.wrap(stream),
-            MaybeHttpsStream::Https(stream) => self.config.verbose.wrap(TlsConn { stream }),
+            MaybeHttpsStream::Http(stream) => self.config.wrap(stream),
+            MaybeHttpsStream::Https(stream) => self.config.wrap(TlsConn { stream }),
         };
 
         Ok(Conn {
