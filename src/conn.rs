@@ -1,3 +1,4 @@
+mod observe;
 mod timeout;
 mod tls_info;
 mod verbose;
