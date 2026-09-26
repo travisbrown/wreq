@@ -33,7 +33,7 @@ pub(super) struct Observed<T> {
     observer: Arc<dyn ConnectionObserver>,
 }
 
-impl<T: Connection> Observed<T> {
+impl<T: Connection + TlsInfoFactory> Observed<T> {
     /// Wrap a connected transport, reporting [`ConnectionEvent::Connected`] before any
     /// application bytes are transferred.
     pub(super) fn new(inner: T, observer: Arc<dyn ConnectionObserver>) -> Self {
@@ -49,6 +49,7 @@ impl<T: Connection> Observed<T> {
             local_addr: info.map(HttpInfo::local_addr),
             remote_addr: info.map(HttpInfo::remote_addr),
             http2: connected.is_negotiated_h2(),
+            tls_version: inner.tls_info().and_then(|info| info.protocol_version()),
         });
 
         Self {
@@ -407,6 +408,8 @@ mod tests {
                 Connected::new()
             }
         }
+
+        impl TlsInfoFactory for FailingStream {}
 
         impl AsyncRead for FailingStream {
             fn poll_read(
