@@ -14,6 +14,7 @@ pub trait TlsInfoFactory {
 fn extract_tls_info<S>(ssl_stream: &SslStream<S>) -> TlsInfo {
     let ssl = ssl_stream.ssl();
     TlsInfo {
+        protocol_version: ssl.version2(),
         peer_certificate: ssl
             .peer_certificate()
             .and_then(|cert| cert.to_der().ok())
