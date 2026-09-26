@@ -2,6 +2,8 @@
 
 use std::{io, net::SocketAddr};
 
+use crate::tls::TlsVersion;
+
 /// Receives connection events without enabling global tracing.
 ///
 /// Callbacks run synchronously on the I/O task and must not block or panic. A shared observer
@@ -38,6 +40,12 @@ pub enum ConnectionEvent<'a> {
         remote_addr: Option<SocketAddr>,
         /// Whether TLS negotiated HTTP/2.
         http2: bool,
+        /// Negotiated TLS version of the observed transport, when available.
+        ///
+        /// For CONNECT and SOCKS tunnels this describes TLS to the origin, not to the proxy.
+        /// Available independently of [`ClientBuilder::tls_info`](crate::ClientBuilder::tls_info).
+        /// Plaintext transports have no TLS version.
+        tls_version: Option<TlsVersion>,
     },
     /// Newly read bytes; excludes any previously filled part of the read buffer.
     Read {

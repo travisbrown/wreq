@@ -20,11 +20,17 @@ use compress::CertificateCompressor;
 /// Made available to clients on responses when `tls_info` is set.
 #[derive(Debug, Clone)]
 pub struct TlsInfo {
+    pub(crate) protocol_version: Option<btls::ssl::SslVersion>,
     pub(crate) peer_certificate: Option<Bytes>,
     pub(crate) peer_certificate_chain: Option<Vec<Bytes>>,
 }
 
 impl TlsInfo {
+    /// Returns the negotiated TLS protocol version, when available.
+    pub fn protocol_version(&self) -> Option<TlsVersion> {
+        self.protocol_version.map(TlsVersion)
+    }
+
     /// Get the DER encoded leaf certificate of the peer.
     pub fn peer_certificate(&self) -> Option<&[u8]> {
         self.peer_certificate.as_deref()
