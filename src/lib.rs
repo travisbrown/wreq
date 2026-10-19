@@ -124,12 +124,16 @@
 //!
 //! ## Websocket
 //!
-//! The `websocket` module provides a way to upgrade a connection to a websocket.
+//! The `ws` module provides a way to upgrade a connection to a WebSocket. The `ws` feature is
+//! required.
 //!
 //! ```rust,no_run
+//! # #[cfg(feature = "ws")]
 //! use futures_util::{SinkExt, StreamExt, TryStreamExt};
+//! # #[cfg(feature = "ws")]
 //! use wreq::{header, ws::message::Message};
 //!
+//! # #[cfg(feature = "ws")]
 //! #[tokio::main]
 //! async fn main() -> wreq::Result<()> {
 //!     // Use the API you're already familiar with
@@ -158,6 +162,8 @@
 //!
 //!     Ok(())
 //! }
+//! # #[cfg(not(feature = "ws"))]
+//! # fn main() {}
 //! ```
 //!
 //! ## Redirect Policies
