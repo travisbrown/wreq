@@ -148,7 +148,7 @@ impl Policy {
     /// let custom = redirect::Policy::custom(|attempt| {
     ///     if attempt.previous.len() > 5 {
     ///         attempt.error("too many redirects")
-    ///     } else if attempt.uri() == "example.domain" {
+    ///     } else if attempt.uri.host() == Some("example.domain") {
     ///         // prevent redirects to 'example.domain'
     ///         attempt.stop()
     ///     } else {
@@ -183,7 +183,7 @@ impl Policy {
     /// #
     /// # fn run() -> Result<(), Error> {
     /// let custom = redirect::Policy::custom(|attempt| {
-    ///     eprintln!("{}, Location: {:?}", attempt.status(), attempt.uri());
+    ///     eprintln!("{}, Location: {:?}", attempt.status, attempt.uri);
     ///     redirect::Policy::default().redirect(attempt)
     /// });
     /// # Ok(())
@@ -273,7 +273,7 @@ impl Attempt<'_, true> {
     /// let policy = redirect::Policy::custom(|attempt| {
     ///     attempt.pending(|attempt| async move {
     ///         // Perform some async operation
-    ///         if attempt.uri().host() == Some("trusted.domain") {
+    ///         if attempt.uri.host() == Some("trusted.domain") {
     ///             attempt.follow()
     ///         } else {
     ///             attempt.stop()

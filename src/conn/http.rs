@@ -125,14 +125,13 @@ pub struct HttpConnector<R, S> {
 ///
 /// # Example
 ///
-/// ```
-/// # fn doc(res: http::Response<()>) {
-/// use crate::util::client::connect::HttpInfo;
+/// Use [`Response::remote_addr`](crate::Response::remote_addr) to access the remote address.
 ///
-/// // res = http::Response
-/// res.extensions().get::<HttpInfo>().map(|info| {
-///     println!("remote addr = {}", info.remote_addr());
-/// });
+/// ```
+/// # fn doc(res: wreq::Response) {
+/// if let Some(addr) = res.remote_addr() {
+///     println!("remote addr = {addr}");
+/// }
 /// # }
 /// ```
 ///
