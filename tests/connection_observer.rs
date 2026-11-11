@@ -1,5 +1,4 @@
 use std::{
-    convert::Infallible,
     net::SocketAddr,
     pin::Pin,
     sync::{Arc, Mutex},
@@ -11,7 +10,6 @@ use btls::{
     ssl::{AlpnError, Ssl, SslAcceptor, SslMethod, SslVersion, select_next_proto},
     x509::X509,
 };
-use hyper_util::rt::{TokioExecutor, TokioIo};
 use tokio::{
     io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt},
     net::TcpListener,
@@ -322,8 +320,13 @@ async fn observes_origin_tls_through_socks_proxy() {
     check_observation(Transport::Socks, false).await;
 }
 
+#[cfg(feature = "http2")]
 #[tokio::test]
 async fn observes_http2_tls_without_response_tls_info() {
+    use std::convert::Infallible;
+
+    use hyper_util::rt::{TokioExecutor, TokioIo};
+
     for version in [SslVersion::TLS1_2, SslVersion::TLS1_3] {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
